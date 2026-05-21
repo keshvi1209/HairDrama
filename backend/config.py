@@ -1,0 +1,26 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
+    
+    # Supabase
+    SUPABASE_URL = os.environ.get("SUPABASE_URL")
+    SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+    SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+    # Gmail SMTP
+    GMAIL_USER = os.environ.get("GMAIL_USER")
+    GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+
+    # CORS
+    ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3001").split(",")
+
+    # Frontend URL (for redirect after OAuth)
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3001")
