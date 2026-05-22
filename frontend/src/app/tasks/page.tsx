@@ -51,14 +51,10 @@ export default function TasksPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
       <Navbar />
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
+      <main className="responsive-padding" style={{ maxWidth: '900px', margin: '0 auto' }}>
 
         {/* Header */}
-        <div className="animate-fade-up" style={{
-          display: 'flex', alignItems: 'flex-end',
-          justifyContent: 'space-between', marginBottom: '32px',
-          flexWrap: 'wrap', gap: '16px',
-        }}>
+        <div className="responsive-header animate-fade-up" style={{ marginBottom: '32px' }}>
           <div>
             <p style={{
               fontSize: '10px', letterSpacing: '4px', color: 'var(--gold)',
@@ -92,9 +88,7 @@ export default function TasksPage() {
         </div>
 
         {/* Filters */}
-        <div className="animate-fade-up" style={{
-          display: 'flex', gap: '12px', marginBottom: '28px',
-          flexWrap: 'wrap', alignItems: 'center',
+        <div className="animate-fade-up responsive-filters" style={{
           animationDelay: '60ms', opacity: 0, animationFillMode: 'forwards',
         }}>
           {/* Search */}

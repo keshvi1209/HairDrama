@@ -105,7 +105,7 @@ export default function TaskDetailPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
       <Navbar />
-      <main style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 24px' }}>
+      <main className="responsive-padding" style={{ maxWidth: '720px', margin: '0 auto' }}>
 
         {/* Back */}
         <button
@@ -178,7 +178,7 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Status + Priority */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '22px' }}>
+          <div className="responsive-grid-2" style={{ marginBottom: '22px' }}>
             <div>
               <label style={labelStyle}>Status</label>
               <select
@@ -204,7 +204,7 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Assignee + Due date */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+          <div className="responsive-grid-2" style={{ marginBottom: '32px' }}>
             <div>
               <label style={labelStyle}>Assigned To</label>
               <select

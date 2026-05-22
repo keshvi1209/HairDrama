@@ -129,13 +129,14 @@ export default function HomePage() {
 
         {/* Sign in button */}
         <div className="animate-fade-up" style={{
-          animationDelay: '320px', opacity: 0, animationFillMode: 'forwards',
+          animationDelay: '320ms', opacity: 0, animationFillMode: 'forwards',
         }}>
           <button
             onClick={signInWithGoogle}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '14px',
               padding: '18px 40px',
+              maxWidth: '100%',
               background: 'transparent',
               border: '1px solid var(--gold)',
               color: 'var(--cream)',

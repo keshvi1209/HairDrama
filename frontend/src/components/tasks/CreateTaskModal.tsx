@@ -59,14 +59,7 @@ export default function CreateTaskModal({ onClose, onCreated }: CreateTaskModalP
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="animate-scale-in"
-        style={{
-          width: '100%', maxWidth: '520px',
-          background: 'var(--ink-soft)',
-          border: '1px solid var(--border-gold)',
-          padding: '36px',
-          position: 'relative',
-        }}
+        className="animate-scale-in responsive-modal"
       >
         {/* Header */}
         <div style={{ marginBottom: '28px' }}>
@@ -133,7 +126,7 @@ export default function CreateTaskModal({ onClose, onCreated }: CreateTaskModalP
           </div>
 
           {/* Priority + Assignee row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div className="responsive-grid-2" style={{ marginBottom: '20px' }}>
             <div>
               <label style={labelStyle}>Priority</label>
               <select

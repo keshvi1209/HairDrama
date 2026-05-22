@@ -57,14 +57,10 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
       <Navbar />
 
-      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 24px' }}>
+      <main className="responsive-padding" style={{ maxWidth: '1280px', margin: '0 auto' }}>
 
         {/* Header */}
-        <div className="animate-fade-up" style={{
-          display: 'flex', alignItems: 'flex-end',
-          justifyContent: 'space-between', marginBottom: '40px',
-          flexWrap: 'wrap', gap: '20px',
-        }}>
+        <div className="responsive-header animate-fade-up">
           <div>
             <div style={{
               display: 'flex', alignItems: 'center', gap: '8px',
@@ -115,7 +111,7 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="animate-fade-up" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
           gap: '16px', marginBottom: '40px',
           animationDelay: '80ms', opacity: 0, animationFillMode: 'forwards',
         }}>
@@ -138,11 +134,7 @@ export default function DashboardPage() {
             Loading tasks…
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '24px',
-          }}>
+          <div className="kanban-grid">
             {COLUMNS.map(col => {
               const colTasks = tasksByStatus(col.status);
               return (
