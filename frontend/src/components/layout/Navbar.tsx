@@ -22,8 +22,7 @@ export default function Navbar() {
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 100,
-      background: 'rgba(10,10,10,0.95)',
-      backdropFilter: 'blur(16px)',
+      background: 'var(--ink)',
     }}>
       <div className="responsive-navbar-padding" style={{
         maxWidth: '1280px', margin: '0 auto',
@@ -121,7 +120,7 @@ export default function Navbar() {
 
       {/* Slide-out Mobile Menu Drawer */}
       {menuOpen && (
-        <div className="mobile-nav-drawer animate-fade-in">
+        <div className="mobile-nav-dropdown">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <NavLink
               href="/dashboard"
