@@ -38,7 +38,7 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
 def send_task_created_email(assignee_email: str, assignee_name: str, task_title: str,
                              task_description: str, creator_name: str, task_id: str):
     frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:3001")
-    task_link = f"{frontend_url}/tasks/{task_id}"
+    task_link = f"{frontend_url}/dashboard"
 
     subject = f"✂️ New Task Assigned: {task_title}"
     html_body = f"""
@@ -74,7 +74,7 @@ def send_task_created_email(assignee_email: str, assignee_name: str, task_title:
             <div class="task-title">{task_title}</div>
             {f'<p class="task-desc">{task_description}</p>' if task_description else ''}
           </div>
-          <a href="{task_link}" class="cta">View Task →</a>
+          <a href="{task_link}" class="cta">Move to Dashboard →</a>
         </div>
         <div class="footer">HairDrama — Fashion Task Management</div>
       </div>
@@ -87,7 +87,7 @@ def send_task_created_email(assignee_email: str, assignee_name: str, task_title:
 def send_task_completed_email(creator_email: str, creator_name: str, task_title: str,
                                completer_name: str, task_id: str):
     frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:3001")
-    task_link = f"{frontend_url}/tasks/{task_id}"
+    task_link = f"{frontend_url}/dashboard"
 
     subject = f"✅ Task Completed: {task_title}"
     html_body = f"""
@@ -121,7 +121,7 @@ def send_task_completed_email(creator_email: str, creator_name: str, task_title:
           <div class="task-card">
             <div class="task-title">{task_title}</div>
           </div>
-          <a href="{task_link}" class="cta">View Task →</a>
+          <a href="{task_link}" class="cta">Move to Dashboard →</a>
         </div>
         <div class="footer">HairDrama — Fashion Task Management</div>
       </div>

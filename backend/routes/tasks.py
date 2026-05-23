@@ -103,8 +103,62 @@ def update_task(task_id):
         return jsonify({"error": "Task not found"}), 404
 
     task = current.data
+
+    # Lock completed tasks
+    if task.get("status") == "done":
+        return jsonify({"error": "Completed tasks are locked and cannot be modified"}), 403
+
     allowed = ["title", "description", "status", "priority", "assignee_id", "due_date"]
     updates = {k: v for k, v in data.items() if k in allowed}
+
+    # Enforce role-based and status-based editing permissions:
+    # - Completed tasks are locked (handled above).
+    # - In-Progress tasks: Only assignee can edit status. Creators and others locked (no change).
+    # - To-Do tasks: Creator has full edit, Assignee has status-only edit.
+    
+    if task.get("status") == "in_progress":
+        if task.get("assignee_id") != user_id:
+            return jsonify({"error": "Only the assignee can update the status of an in-progress task. Creators cannot make changes."}), 403
+        
+        # User is the assignee. They can ONLY update 'status'.
+        changed_fields = []
+        for k, v in updates.items():
+            if k != "status":
+                old_val = task.get(k) or ""
+                new_val = v or ""
+                if str(old_val) != str(new_val):
+                    changed_fields.append(k)
+        
+        if changed_fields:
+            return jsonify({
+                "error": f"Assignees are only permitted to update task status. You cannot edit: {', '.join(changed_fields)}"
+            }), 403
+        
+        updates = {"status": updates.get("status")} if "status" in updates else {}
+
+    elif task.get("status") == "todo":
+        if task.get("creator_id") != user_id:
+            if task.get("assignee_id") != user_id:
+                return jsonify({"error": "Only the task creator or assignee can update this task"}), 403
+            
+            # User is the assignee. They can ONLY update 'status'.
+            changed_fields = []
+            for k, v in updates.items():
+                if k != "status":
+                    old_val = task.get(k) or ""
+                    new_val = v or ""
+                    if str(old_val) != str(new_val):
+                        changed_fields.append(k)
+
+            if changed_fields:
+                return jsonify({
+                    "error": f"Assignees are only permitted to update task status. You cannot edit: {', '.join(changed_fields)}"
+                }), 403
+            
+            updates = {"status": updates.get("status")} if "status" in updates else {}
+
+    if not updates:
+        return jsonify(task)
 
     result = supabase.table("tasks").update(updates).eq("id", task_id).execute()
     updated = result.data[0] if result.data else {**task, **updates}
@@ -124,6 +178,25 @@ def update_task(task_id):
                 )
         except Exception:
             pass
+
+    # Notify new assignee if task is newly assigned or reassigned
+    if "assignee_id" in updates and updates["assignee_id"] != task.get("assignee_id"):
+        new_assignee_id = updates["assignee_id"]
+        if new_assignee_id and new_assignee_id != user_id:
+            try:
+                assignee = get_user_profile(supabase, new_assignee_id)
+                creator = get_user_profile(supabase, task.get("creator_id") or user_id)
+                if assignee and assignee.get("email"):
+                    send_task_created_email(
+                        assignee_email=assignee["email"],
+                        assignee_name=assignee.get("full_name", "there"),
+                        task_title=updated.get("title") or task.get("title"),
+                        task_description=updated.get("description") or task.get("description", ""),
+                        creator_name=creator.get("full_name", "Someone") if creator else "Someone",
+                        task_id=task_id,
+                    )
+            except Exception:
+                pass
 
     return jsonify(updated)
 
