@@ -8,15 +8,15 @@ import TaskCard from '@/components/tasks/TaskCard';
 import CreateTaskModal from '@/components/tasks/CreateTaskModal';
 import { getTasks } from '@/lib/api';
 import { Task, TaskStatus } from '@/types';
-import { Plus, User, Scissors, TrendingUp, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Scissors, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
 
 const COLUMNS: { status: TaskStatus; label: string; icon: React.ReactNode }[] = [
-  { status: 'todo',        label: 'To Do',       icon: <Clock size={13} /> },
-  { status: 'in_progress', label: 'In Progress',  icon: <TrendingUp size={13} /> },
-  { status: 'done',        label: 'Completed',    icon: <CheckCircle2 size={13} /> },
+  { status: 'todo', label: 'To Do', icon: <Clock size={13} /> },
+  { status: 'in_progress', label: 'In Progress', icon: <TrendingUp size={13} /> },
+  { status: 'done', label: 'Completed', icon: <CheckCircle2 size={13} /> },
 ];
 
-export default function DashboardPage() {
+export default function AssignedTasksPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -42,14 +42,15 @@ export default function DashboardPage() {
     if (user) fetchTasks();
   }, [user, fetchTasks]);
 
-  const myTasks = tasks.filter(t => t.assignee_id === user?.id);
-  const tasksByStatus = (status: TaskStatus) => myTasks.filter(t => t.status === status);
+  // Assigned Tasks: Created by user, assigned to someone else
+  const assignedTasks = tasks.filter(t => t.creator_id === user?.id && t.assignee_id !== user?.id);
+  const tasksByStatus = (status: TaskStatus) => assignedTasks.filter(t => t.status === status);
 
   const stats = {
-    total: myTasks.length,
-    done: myTasks.filter(t => t.status === 'done').length,
-    inProgress: myTasks.filter(t => t.status === 'in_progress').length,
-    urgent: myTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
+    total: assignedTasks.length,
+    done: assignedTasks.filter(t => t.status === 'done').length,
+    inProgress: assignedTasks.filter(t => t.status === 'in_progress').length,
+    urgent: assignedTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
   };
 
   if (authLoading || (!user && !authLoading)) return null;
@@ -64,22 +65,22 @@ export default function DashboardPage() {
         <div className="responsive-header animate-fade-up">
           <div>
             <div style={{ marginBottom: '8px' }}>
-              <span style={{
+              {/* <span style={{
                 fontSize: '10px', letterSpacing: '4px',
                 color: 'var(--gold)', textTransform: 'uppercase',
                 fontFamily: 'var(--font-cormorant)',
               }}>
-                Assigned to You
-              </span>
+                Assigned by You
+              </span> */}
             </div>
             <h1 style={{
               fontFamily: 'var(--font-playfair)',
               fontSize: 'clamp(28px, 4vw, 40px)',
               fontWeight: 400, color: 'var(--cream)',
             }}>
-              Welcome back,{' '}
+              Delegated by{' '}
               <span style={{ color: 'var(--gold)' }}>
-                {user?.user_metadata?.full_name?.split(' ')[0] || 'Darling'}
+                You
               </span>
             </h1>
           </div>
@@ -112,7 +113,7 @@ export default function DashboardPage() {
           gap: '16px', marginBottom: '40px',
           animationDelay: '80ms', opacity: 0, animationFillMode: 'forwards',
         }}>
-          <StatCard label="Total Tasks" value={stats.total} color="var(--cream)" />
+          <StatCard label="Total Assigned" value={stats.total} color="var(--cream)" />
           <StatCard label="Completed" value={stats.done} color="var(--green)" />
           <StatCard label="In Progress" value={stats.inProgress} color="var(--amber)" />
           <StatCard label="Urgent" value={stats.urgent} color="var(--red)" />
@@ -179,7 +180,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       colTasks.map(task => (
-                        <TaskCard key={task.id} task={task} currentUserId={user?.id} disableEdit={col.status === 'done'} />
+                        <TaskCard key={task.id} task={task} currentUserId={user?.id} disableEdit={col.status !== 'todo'} actionText="Edit" />
                       ))
                     )}
                   </div>

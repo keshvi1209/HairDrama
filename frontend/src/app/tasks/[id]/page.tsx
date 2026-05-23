@@ -100,46 +100,72 @@ export default function TaskDetailPage() {
   if (!task) return null;
 
   const isCreator = task.creator_id === user?.id;
-  const canEdit = task.creator_id === user?.id || task.assignee_id === user?.id;
+  const isAssignee = task.assignee_id === user?.id;
+  const isCompleted = task.status === 'done';
+
+  // Details can only be edited by creator if task is in 'todo' status
+  const canEditAll = isCreator && task.status === 'todo';
+
+  // Status can be updated by:
+  // - Creator if in 'todo'
+  // - Assignee if in 'todo' or 'in_progress'
+  const canEditStatus = (isCreator && task.status === 'todo') || (isAssignee && (task.status === 'todo' || task.status === 'in_progress'));
+
+  const canEdit = canEditAll || canEditStatus;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
       <Navbar />
       <main className="responsive-padding" style={{ maxWidth: '720px', margin: '0 auto' }}>
 
-        {/* Back */}
-        <button
-          onClick={() => router.back()}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--muted)', marginBottom: '32px',
-            fontFamily: 'var(--font-cormorant)',
-            fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase',
-            transition: 'color 0.2s',
-            padding: 0,
-          }}
-          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--gold)'}
-          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--muted)'}
-        >
-          <ArrowLeft size={13} />
-          Back
-        </button>
-
         {/* Task meta */}
         <div className="animate-fade-up" style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Scissors size={11} color="var(--gold)" style={{ transform: 'rotate(-45deg)' }} />
-            <span style={{ fontSize: '10px', letterSpacing: '3px', color: 'var(--gold)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)' }}>
+            <button
+              onClick={() => router.back()}
+              title="Back"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 0, display: 'inline-flex', alignItems: 'center',
+                color: 'var(--gold)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--gold-light)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateX(-2px)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--gold)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateX(0)';
+              }}
+            >
+              <ArrowLeft size={14} />
+            </button>
+            <span style={{ fontSize: '12px', letterSpacing: '3px', color: 'var(--gold)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)' }}>
               Task Detail
             </span>
-            {!canEdit && (
-              <span style={{ fontSize: '10px', letterSpacing: '2px', color: 'var(--muted)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginLeft: '8px' }}>
+            {isCompleted && (
+              <span style={{ fontSize: '12px', letterSpacing: '2px', color: 'var(--muted)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginLeft: '8px' }}>
+                (Completed — Read only)
+              </span>
+            )}
+            {!isCompleted && task.status === 'in_progress' && isCreator && (
+              <span style={{ fontSize: '12px', letterSpacing: '2px', color: 'var(--muted)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginLeft: '8px' }}>
+                (In Progress — Read only)
+              </span>
+            )}
+            {!isCompleted && !isCreator && isAssignee && (
+              <span style={{ fontSize: '12px', letterSpacing: '2px', color: 'var(--gold)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginLeft: '8px' }}>
+                (Status update only)
+              </span>
+            )}
+            {!isCompleted && !isCreator && !isAssignee && (
+              <span style={{ fontSize: '12px', letterSpacing: '2px', color: 'var(--muted)', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginLeft: '8px' }}>
                 (View only)
               </span>
             )}
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: '12px', letterSpacing: '1px' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '14px', letterSpacing: '1px' }}>
             Created {format(parseISO(task.created_at), 'MMMM d, yyyy')}
             {task.creator && ` by ${task.creator.full_name || task.creator.email}`}
           </p>
@@ -156,9 +182,9 @@ export default function TaskDetailPage() {
             <input
               value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
-              disabled={!canEdit}
-              style={{ ...inputStyle, fontSize: '18px', opacity: canEdit ? 1 : 0.6 }}
-              onFocus={e => canEdit && ((e.currentTarget as HTMLInputElement).style.borderColor = 'var(--gold)')}
+              disabled={!canEditAll}
+              style={{ ...inputStyle, fontSize: '18px', opacity: canEditAll ? 1 : 0.6 }}
+              onFocus={e => canEditAll && ((e.currentTarget as HTMLInputElement).style.borderColor = 'var(--gold)')}
               onBlur={e => (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border)'}
             />
           </div>
@@ -169,10 +195,10 @@ export default function TaskDetailPage() {
             <textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
-              disabled={!canEdit}
+              disabled={!canEditAll}
               rows={4}
-              style={{ ...inputStyle, resize: 'vertical', minHeight: '100px', opacity: canEdit ? 1 : 0.6 }}
-              onFocus={e => canEdit && ((e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--gold)')}
+              style={{ ...inputStyle, resize: 'vertical', minHeight: '100px', opacity: canEditAll ? 1 : 0.6 }}
+              onFocus={e => canEditAll && ((e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--gold)')}
               onBlur={e => (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--border)'}
             />
           </div>
@@ -195,8 +221,8 @@ export default function TaskDetailPage() {
               <select
                 value={form.priority}
                 onChange={e => setForm({ ...form, priority: e.target.value as TaskPriority })}
-                disabled={!canEdit}
-                style={{ ...selectStyle, opacity: canEdit ? 1 : 0.6 }}
+                disabled={!canEditAll}
+                style={{ ...selectStyle, opacity: canEditAll ? 1 : 0.6 }}
               >
                 {PRIORITY_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
@@ -210,8 +236,8 @@ export default function TaskDetailPage() {
               <select
                 value={form.assignee_id}
                 onChange={e => setForm({ ...form, assignee_id: e.target.value })}
-                disabled={!isCreator}
-                style={{ ...selectStyle, opacity: isCreator ? 1 : 0.6 }}
+                disabled={!canEditAll}
+                style={{ ...selectStyle, opacity: canEditAll ? 1 : 0.6 }}
               >
                 <option value="">Unassigned</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
@@ -223,8 +249,8 @@ export default function TaskDetailPage() {
                 type="date"
                 value={form.due_date}
                 onChange={e => setForm({ ...form, due_date: e.target.value })}
-                disabled={!canEdit}
-                style={{ ...inputStyle, colorScheme: 'dark', opacity: canEdit ? 1 : 0.6 }}
+                disabled={!canEditAll}
+                style={{ ...inputStyle, colorScheme: 'dark', opacity: canEditAll ? 1 : 0.6 }}
               />
             </div>
           </div>
@@ -249,7 +275,7 @@ export default function TaskDetailPage() {
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold)'}
               >
                 <Save size={13} />
-                {saving ? 'Saving…' : 'Save Changes'}
+                {saving ? 'Saving…' : (canEditAll ? 'Save Changes' : 'Make Update')}
               </button>
             )}
             {isCreator && (

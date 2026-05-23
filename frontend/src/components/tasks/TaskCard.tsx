@@ -21,9 +21,11 @@ const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string }> = 
 interface TaskCardProps {
   task: Task;
   currentUserId?: string;
+  disableEdit?: boolean;
+  actionText?: 'Edit' | 'Update Status';
 }
 
-export default function TaskCard({ task, currentUserId }: TaskCardProps) {
+export default function TaskCard({ task, currentUserId, disableEdit, actionText = 'Update Status' }: TaskCardProps) {
   const router = useRouter();
   const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.todo;
   const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
@@ -33,23 +35,25 @@ export default function TaskCard({ task, currentUserId }: TaskCardProps) {
 
   return (
     <div
-      onClick={() => router.push(`/tasks/${task.id}`)}
+      onClick={disableEdit ? undefined : () => router.push(`/tasks/${task.id}`)}
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         padding: '20px 22px',
-        cursor: 'pointer',
+        cursor: disableEdit ? 'default' : 'pointer',
         transition: 'all 0.25s ease',
         position: 'relative',
         overflow: 'hidden',
       }}
       onMouseEnter={e => {
+        if (disableEdit) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.borderColor = 'var(--border-gold)';
         el.style.transform = 'translateY(-2px)';
         el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
       }}
       onMouseLeave={e => {
+        if (disableEdit) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.borderColor = 'var(--border)';
         el.style.transform = 'translateY(0)';
@@ -161,7 +165,22 @@ export default function TaskCard({ task, currentUserId }: TaskCardProps) {
             )}
           </div>
 
-          <ChevronRight size={14} color="var(--muted)" />
+          {!disableEdit && (
+            <span style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-cormorant)',
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+              color: 'var(--gold)',
+              border: '1px solid var(--border-gold)',
+              padding: '4px 10px',
+              borderRadius: '1px',
+              background: 'rgba(201, 168, 76, 0.05)',
+              transition: 'all 0.2s',
+            }}>
+              {actionText}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -49,11 +49,11 @@ export default function Navbar() {
           </span>
         </button>
 
-        {/* Nav links — desktop */}
         <nav style={{
           display: 'flex', alignItems: 'center', gap: '32px',
         }} className="desktop-nav">
           <NavLink href="/dashboard" label="Dashboard" router={router} />
+          <NavLink href="/tasks/assigned" label="Assigned by You" router={router} />
           <NavLink href="/tasks" label="All Tasks" router={router} />
         </nav>
 
@@ -125,6 +125,12 @@ export default function Navbar() {
             <NavLink
               href="/dashboard"
               label="Dashboard"
+              router={router}
+              onClick={() => setMenuOpen(false)}
+            />
+            <NavLink
+              href="/tasks/assigned"
+              label="Assigned by You"
               router={router}
               onClick={() => setMenuOpen(false)}
             />

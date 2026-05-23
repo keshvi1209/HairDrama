@@ -68,23 +68,6 @@ export default function TasksPage() {
               All Tasks
             </h1>
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '12px 22px',
-              background: 'var(--gold)', color: 'var(--ink)',
-              border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-cormorant)',
-              fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase',
-              transition: 'background 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold-light)'}
-            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--gold)'}
-          >
-            <Plus size={14} />
-            New Task
-          </button>
         </div>
 
         {/* Filters */}
@@ -174,24 +157,14 @@ export default function TasksPage() {
             textAlign: 'center', padding: '80px 0',
             border: '1px dashed var(--border)',
           }}>
-            <p style={{ color: 'var(--muted)', letterSpacing: '2px', fontSize: '13px', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)', marginBottom: '16px' }}>
+            <p style={{ color: 'var(--muted)', letterSpacing: '2px', fontSize: '13px', textTransform: 'uppercase', fontFamily: 'var(--font-cormorant)' }}>
               No tasks found
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              style={{
-                background: 'none', border: '1px solid var(--border-gold)',
-                color: 'var(--gold)', padding: '10px 24px', cursor: 'pointer',
-                fontFamily: 'var(--font-cormorant)', fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase',
-              }}
-            >
-              Create First Task
-            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {filtered.map(task => (
-              <TaskCard key={task.id} task={task} currentUserId={user?.id} />
+              <TaskCard key={task.id} task={task} currentUserId={user?.id} disableEdit={true} />
             ))}
           </div>
         )}
