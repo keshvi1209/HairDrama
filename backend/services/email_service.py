@@ -25,7 +25,7 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
             server.starttls()  # Upgrade connection to secure SSL/TLS
             server.login(gmail_user, gmail_password)
             server.sendmail(gmail_user, to_email, msg.as_string())
