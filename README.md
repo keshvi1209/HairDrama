@@ -15,7 +15,7 @@ Luxury editorial task management system tailored for the HairDrama team. Impleme
 - **Frontend:** Next.js 14 (App Router) + TypeScript + Tailwind CSS (deployed on Vercel)
 - **Backend:** Flask REST API + Gunicorn (deployed on Railway)
 - **Database & Auth:** Supabase (Postgres with RLS & Google OAuth integration)
-- **Notifications:** Transactional HTML emails sent via secure Gmail SMTP
+- **Notifications:** Transactional HTML emails sent via Brevo/Resend HTTP APIs, with Gmail SMTP fallback
 
 ---
 
@@ -40,6 +40,26 @@ Automated, luxury-styled HTML emails are dispatched with clear **`Move to Dashbo
 1. **Assignment / Reassignment:** Dispatched to the assignee immediately upon task setup or update.
 2. **Task Completion:** Sent to the creator as soon as the assignee transitions the status to **`Done`**.
 
+For deployed environments, prefer an HTTP email provider because many hosts block or throttle outbound SMTP. Configure either Brevo or Resend in the backend service dashboard:
+
+```env
+BREVO_API_KEY=your-brevo-api-key
+BREVO_SENDER_EMAIL=your-verified-sender@example.com
+
+# or
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM_EMAIL=notifications@your-verified-domain.com
+```
+
+Gmail SMTP is kept as a fallback and can work locally:
+
+```env
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-gmail-app-password
+```
+
+If deployed emails fail, check the backend logs. Notification failures are logged with the provider response while task creation/update still succeeds.
+
 ---
 
 ## 🚀 Quick Start
@@ -50,9 +70,14 @@ Configure these in your local root or service dashboards:
 **Backend (`backend/.env`):**
 ```env
 SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_KEY=your-supabase-service-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 GMAIL_USER=your-email@gmail.com
 GMAIL_APP_PASSWORD=your-gmail-16-char-app-password
+BREVO_API_KEY=your-brevo-api-key
+BREVO_SENDER_EMAIL=your-verified-sender@example.com
+# or:
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM_EMAIL=notifications@your-verified-domain.com
 FRONTEND_URL=http://localhost:3001
 ALLOWED_ORIGINS=http://localhost:3001
 ```

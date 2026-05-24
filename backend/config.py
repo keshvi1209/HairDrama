@@ -23,6 +23,10 @@ class Config:
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
     RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
+    # Brevo API (Ideal for deployed free-tier assignments without custom domains)
+    BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+    BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL")
+
     # CORS
     ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3001").split(",")
 

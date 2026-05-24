@@ -3,8 +3,10 @@ from services.supabase_client import get_supabase_admin
 from services.auth_middleware import require_auth
 from services.email_service import send_task_created_email, send_task_completed_email
 import uuid
+import logging
 
 tasks_bp = Blueprint("tasks", __name__)
+logger = logging.getLogger(__name__)
 
 
 def get_user_profile(supabase, user_id: str):
@@ -61,7 +63,7 @@ def create_task():
             assignee = get_user_profile(supabase, task["assignee_id"])
             creator = get_user_profile(supabase, user_id)
             if assignee and assignee.get("email"):
-                send_task_created_email(
+                sent = send_task_created_email(
                     assignee_email=assignee["email"],
                     assignee_name=assignee.get("full_name", "there"),
                     task_title=task["title"],
@@ -69,8 +71,10 @@ def create_task():
                     creator_name=creator.get("full_name", "Someone") if creator else "Someone",
                     task_id=task["id"],
                 )
+                if not sent:
+                    logger.warning("Task assignment email was not sent for task %s to %s", task["id"], assignee["email"])
         except Exception as e:
-            pass  # Don't fail task creation if email fails
+            logger.exception("Task assignment email failed for task %s: %s", task["id"], e)
 
     return jsonify(created), 201
 
@@ -169,15 +173,17 @@ def update_task(task_id):
             creator = get_user_profile(supabase, task["creator_id"])
             completer = get_user_profile(supabase, user_id)
             if creator and creator.get("email") and creator["id"] != user_id:
-                send_task_completed_email(
+                sent = send_task_completed_email(
                     creator_email=creator["email"],
                     creator_name=creator.get("full_name", "there"),
                     task_title=task["title"],
                     completer_name=completer.get("full_name", "Someone") if completer else "Someone",
                     task_id=task_id,
                 )
-        except Exception:
-            pass
+                if not sent:
+                    logger.warning("Task completion email was not sent for task %s to %s", task_id, creator["email"])
+        except Exception as e:
+            logger.exception("Task completion email failed for task %s: %s", task_id, e)
 
     # Notify new assignee if task is newly assigned or reassigned
     if "assignee_id" in updates and updates["assignee_id"] != task.get("assignee_id"):
@@ -187,7 +193,7 @@ def update_task(task_id):
                 assignee = get_user_profile(supabase, new_assignee_id)
                 creator = get_user_profile(supabase, task.get("creator_id") or user_id)
                 if assignee and assignee.get("email"):
-                    send_task_created_email(
+                    sent = send_task_created_email(
                         assignee_email=assignee["email"],
                         assignee_name=assignee.get("full_name", "there"),
                         task_title=updated.get("title") or task.get("title"),
@@ -195,8 +201,10 @@ def update_task(task_id):
                         creator_name=creator.get("full_name", "Someone") if creator else "Someone",
                         task_id=task_id,
                     )
-            except Exception:
-                pass
+                    if not sent:
+                        logger.warning("Task reassignment email was not sent for task %s to %s", task_id, assignee["email"])
+            except Exception as e:
+                logger.exception("Task reassignment email failed for task %s: %s", task_id, e)
 
     return jsonify(updated)
 

@@ -4,16 +4,24 @@ from email.mime.multipart import MIMEMultipart
 from flask import current_app
 import logging
 import urllib.request
+import urllib.error
 import json
 
 logger = logging.getLogger(__name__)
 
-def send_email_via_resend(to_email: str, subject: str, html_body: str):
+def send_email_via_resend(to_email: str, subject: str, html_body: str, from_name: str = "HairDrama Tasks"):
     """Send an email via Resend HTTP API."""
     api_key = current_app.config.get("RESEND_API_KEY")
     from_email = current_app.config.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
-    if not api_key:
+    is_resend_configured = (
+        api_key 
+        and not api_key.startswith("YOUR_")
+        and not api_key.startswith("re_your_")
+        and api_key.strip() != ""
+    )
+
+    if not is_resend_configured:
         logger.warning("Resend API key not configured — skipping Resend send.")
         return False
 
@@ -23,7 +31,7 @@ def send_email_via_resend(to_email: str, subject: str, html_body: str):
         "Content-Type": "application/json"
     }
     data = {
-        "from": f"HairDrama Tasks <{from_email}>",
+        "from": f"{from_name} <{from_email}>",
         "to": [to_email],
         "subject": subject,
         "html": html_body
@@ -45,18 +53,105 @@ def send_email_via_resend(to_email: str, subject: str, html_body: str):
             else:
                 logger.error(f"Resend API returned non-success status {response.status}: {res_body}")
                 return False
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        logger.error(f"Resend API returned HTTP {e.code} for {to_email}: {error_body}")
+        return False
     except Exception as e:
         logger.error(f"Failed to send email via Resend to {to_email}: {e}")
         return False
 
 
-def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
-    """Send an email. Tries Resend HTTP API first (if configured), then Gmail SMTP as fallback."""
+def send_email_via_brevo(to_email: str, subject: str, html_body: str, from_name: str = "HairDrama Tasks"):
+    """Send an email via Brevo HTTP API (allows sending to anyone using a verified personal email sender)."""
+    api_key = current_app.config.get("BREVO_API_KEY")
+    sender_email = current_app.config.get("BREVO_SENDER_EMAIL")
+
+    is_brevo_configured = (
+        api_key 
+        and not api_key.startswith("YOUR_")
+        and not api_key.startswith("brevo_")
+        and api_key.strip() != ""
+        and sender_email
+        and not sender_email.startswith("your-")
+        and sender_email.strip() != ""
+    )
+
+    if not is_brevo_configured:
+        logger.warning("Brevo API key/sender not configured — skipping Brevo send.")
+        return False
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    data = {
+        "sender": {
+            "name": from_name,
+            "email": sender_email
+        },
+        "to": [
+            {
+                "email": to_email
+            }
+        ],
+        "subject": subject,
+        "htmlContent": html_body
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_body = json.loads(response.read().decode("utf-8"))
+            if response.status in [200, 201]:
+                logger.info(f"Email sent via Brevo to {to_email}: {subject} (ID: {res_body.get('messageId')})")
+                return True
+            else:
+                logger.error(f"Brevo API returned non-success status {response.status}: {res_body}")
+                return False
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        logger.error(f"Brevo API returned HTTP {e.code} for {to_email}: {error_body}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to send email via Brevo to {to_email}: {e}")
+        return False
+
+
+def send_email(to_email: str, subject: str, html_body: str, text_body: str = None, from_name: str = "HairDrama Tasks"):
+    """Send an email. Tries Brevo, then Resend HTTP API, and finally Gmail SMTP as fallback."""
+    # Try Brevo API if key is provided (ideal for deployed environments without custom domains)
+    brevo_key = current_app.config.get("BREVO_API_KEY")
+    is_brevo_configured = (
+        brevo_key 
+        and not brevo_key.startswith("YOUR_")
+        and not brevo_key.startswith("brevo_")
+        and brevo_key.strip() != ""
+    )
+    if is_brevo_configured:
+        logger.info(f"Attempting to send email via Brevo to {to_email}")
+        if send_email_via_brevo(to_email, subject, html_body, from_name=from_name):
+            return True
+        logger.warning("Brevo delivery failed; trying alternative methods...")
+
     # Try Resend API if API key is provided
     resend_key = current_app.config.get("RESEND_API_KEY")
-    if resend_key:
+    is_resend_configured = (
+        resend_key 
+        and not resend_key.startswith("YOUR_")
+        and not resend_key.startswith("re_your_")
+        and resend_key.strip() != ""
+    )
+    if is_resend_configured:
         logger.info(f"Attempting to send email via Resend to {to_email}")
-        if send_email_via_resend(to_email, subject, html_body):
+        if send_email_via_resend(to_email, subject, html_body, from_name=from_name):
             return True
         logger.warning("Resend delivery failed; falling back to Gmail SMTP...")
 
@@ -64,13 +159,22 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
     gmail_user = current_app.config.get("GMAIL_USER")
     gmail_password = current_app.config.get("GMAIL_APP_PASSWORD")
 
-    if not gmail_user or not gmail_password:
-        logger.warning("Gmail credentials not configured — skipping email send.")
+    is_gmail_configured = (
+        gmail_user 
+        and not gmail_user.startswith("your-")
+        and gmail_user.strip() != ""
+        and gmail_password
+        and not gmail_password.startswith("your-")
+        and gmail_password.strip() != ""
+    )
+
+    if not is_gmail_configured:
+        logger.warning("Gmail credentials not configured or using placeholders — skipping email send.")
         return False
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"HairDrama Tasks <{gmail_user}>"
+    msg["From"] = f"{from_name} <{gmail_user}>"
     msg["To"] = to_email
 
     if text_body:
@@ -78,7 +182,7 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
             server.starttls()  # Upgrade connection to secure SSL/TLS
             server.login(gmail_user, gmail_password)
             server.sendmail(gmail_user, to_email, msg.as_string())
@@ -135,7 +239,7 @@ def send_task_created_email(assignee_email: str, assignee_name: str, task_title:
     </body>
     </html>
     """
-    send_email(assignee_email, subject, html_body)
+    return send_email(assignee_email, subject, html_body, from_name=f"{creator_name} via HairDrama")
 
 
 def send_task_completed_email(creator_email: str, creator_name: str, task_title: str,
@@ -182,4 +286,4 @@ def send_task_completed_email(creator_email: str, creator_name: str, task_title:
     </body>
     </html>
     """
-    send_email(creator_email, subject, html_body)
+    return send_email(creator_email, subject, html_body, from_name=f"{completer_name} via HairDrama")

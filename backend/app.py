@@ -4,6 +4,13 @@ from config import Config
 from routes.auth import auth_bp
 from routes.tasks import tasks_bp
 from routes.users import users_bp
+import logging
+
+# Configure basic logging to console with format and level info
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+)
 
 def create_app():
     app = Flask(__name__)
