@@ -19,6 +19,10 @@ class Config:
     GMAIL_USER = os.environ.get("GMAIL_USER")
     GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
 
+    # Resend API (for deployed environments)
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+    RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+
     # CORS
     ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3001").split(",")
 

@@ -3,11 +3,64 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 import logging
+import urllib.request
+import json
 
 logger = logging.getLogger(__name__)
 
+def send_email_via_resend(to_email: str, subject: str, html_body: str):
+    """Send an email via Resend HTTP API."""
+    api_key = current_app.config.get("RESEND_API_KEY")
+    from_email = current_app.config.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+
+    if not api_key:
+        logger.warning("Resend API key not configured — skipping Resend send.")
+        return False
+
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": f"HairDrama Tasks <{from_email}>",
+        "to": [to_email],
+        "subject": subject,
+        "html": html_body
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        # Use a reasonable 5 second timeout
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_body = json.loads(response.read().decode("utf-8"))
+            if response.status in [200, 201]:
+                logger.info(f"Email sent via Resend to {to_email}: {subject} (ID: {res_body.get('id')})")
+                return True
+            else:
+                logger.error(f"Resend API returned non-success status {response.status}: {res_body}")
+                return False
+    except Exception as e:
+        logger.error(f"Failed to send email via Resend to {to_email}: {e}")
+        return False
+
+
 def send_email(to_email: str, subject: str, html_body: str, text_body: str = None):
-    """Send an email via Gmail SMTP."""
+    """Send an email. Tries Resend HTTP API first (if configured), then Gmail SMTP as fallback."""
+    # Try Resend API if API key is provided
+    resend_key = current_app.config.get("RESEND_API_KEY")
+    if resend_key:
+        logger.info(f"Attempting to send email via Resend to {to_email}")
+        if send_email_via_resend(to_email, subject, html_body):
+            return True
+        logger.warning("Resend delivery failed; falling back to Gmail SMTP...")
+
+    # Fallback to Gmail SMTP
     gmail_user = current_app.config.get("GMAIL_USER")
     gmail_password = current_app.config.get("GMAIL_APP_PASSWORD")
 
@@ -29,10 +82,10 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
             server.starttls()  # Upgrade connection to secure SSL/TLS
             server.login(gmail_user, gmail_password)
             server.sendmail(gmail_user, to_email, msg.as_string())
-        logger.info(f"Email sent to {to_email}: {subject}")
+        logger.info(f"Email sent via SMTP to {to_email}: {subject}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send email to {to_email}: {e}")
+        logger.error(f"Failed to send email via SMTP to {to_email}: {e}")
         return False
 
 
